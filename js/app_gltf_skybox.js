@@ -20,6 +20,7 @@ function init() {
 
   createCamera();
   createControls();
+  createSkybox();
   createLights();
   createMaterials();
   loadModels();
@@ -34,10 +35,25 @@ function init() {
 
 }
 
+function createSkybox() {
+
+  scene.background = new THREE.CubeTextureLoader()
+    .setPath('js/three.js-master/examples/textures/cube/MilkyWay/')
+    .load([
+      'dark-s_px.jpg',
+      'dark-s_nx.jpg',
+      'dark-s_py.jpg',
+      'dark-s_ny.jpg',
+      'dark-s_pz.jpg',
+      'dark-s_nz.jpg'
+    ]);
+
+}
+
 function createCamera() {
 
   camera = new THREE.PerspectiveCamera(35, container.clientWidth / container.clientHeight, 0.1, 10000);
-  camera.position.set(0, -5, 0);
+  camera.position.set(0, 0, 5);
 
 }
 
@@ -50,9 +66,9 @@ function createControls() {
 
 function createLights() {
 
-  const ambientLight = new THREE.HemisphereLight(0xddeeff, 0x0f0e0d, 5);
+  const ambientLight = new THREE.HemisphereLight(0xddeeff, 0x0f0e0d, 2);
 
-  const mainLight = new THREE.DirectionalLight(0xffffff, 5);
+  const mainLight = new THREE.DirectionalLight(0xffffff, 4);
   mainLight.position.set(10, 10, 10);
 
   scene.add(ambientLight, mainLight);
@@ -78,18 +94,21 @@ function createMaterials() {
 
   newStandard = new THREE.MeshStandardMaterial({
     map: imgTexture,
-    bumpMap: imgTexture,
-    bumpScale: 1,
+    // bumpMap: imgTexture,
+    // bumpScale: 1,
     //color: diffuseColor,
     metalness: 0.5,
-    roughness: 0.1,
+    roughness: 0.0001,
     //envMap: imgTexture,
-    displacementmap: imgTexture,
-    displacementscale: 0.1,
-    skinning: true
+    // displacementMap: imgTexture,
+    // displacementScale: 0.1,
+    skinning: true,
+    // color: 0xffffff,
+    // envMap: scene.background,
+    // refractionRatio: 0.95
   });
 
-
+  // newStandard.envMap.mapping = THREE.CubeRefractionMapping;
 
 }
 

@@ -6,7 +6,12 @@ let renderer;
 let scene;
 
 //add material name here first
-let newMaterial, Standard, newStandard;
+let newMaterial, Standard, newStandard, pointsMaterial;
+
+let SkyboxTexture, SkyboxMaterial, refractorySkybox;
+
+let raycaster;
+let mouse;
 
 const mixers = [];
 const clock = new THREE.Clock();
@@ -18,6 +23,7 @@ function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x8FBCD4);
 
+  createSkybox();
   createCamera();
   createControls();
   createLights();
@@ -34,10 +40,25 @@ function init() {
 
 }
 
+function createSkybox() {
+
+  scene.background = new THREE.CubeTextureLoader()
+    .setPath('js/three.js-master/examples/textures/cube/MilkyWay/')
+    .load([
+      'dark-s_px.jpg',
+      'dark-s_nx.jpg',
+      'dark-s_py.jpg',
+      'dark-s_ny.jpg',
+      'dark-s_pz.jpg',
+      'dark-s_nz.jpg'
+    ]);
+
+}
+
 function createCamera() {
 
   camera = new THREE.PerspectiveCamera(35, container.clientWidth / container.clientHeight, 0.1, 10000);
-  camera.position.set(0, -5, 0);
+  camera.position.set(0, 0, 5);
 
 }
 
@@ -50,9 +71,9 @@ function createControls() {
 
 function createLights() {
 
-  const ambientLight = new THREE.HemisphereLight(0xddeeff, 0x0f0e0d, 5);
+  const ambientLight = new THREE.HemisphereLight(0xddeeff, 0x0f0e0d, 2);
 
-  const mainLight = new THREE.DirectionalLight(0xffffff, 5);
+  const mainLight = new THREE.DirectionalLight(0xffffff, 4);
   mainLight.position.set(10, 10, 10);
 
   scene.add(ambientLight, mainLight);
@@ -61,35 +82,78 @@ function createLights() {
 
 function createMaterials() {
 
-  let diffuseColor = "#9E4300";
-  newMaterial = new THREE.MeshBasicMaterial({
-    color: "#9E4300",
-    skinning: true
-  });
-  Standard = new THREE.MeshStandardMaterial({
-    color: "#9E4300",
-    skinning: true
-  });
+  function createMaterials(){
 
-  var imgTexture = new THREE.TextureLoader().load("textures/slimetexture.png");
-  imgTexture.wrapS = imgTexture.wrapT = THREE.RepeatWrapping;
-  imgTexture.anisotropy = 16;
+       let diffuseColor = "#9E4300";
+       newMaterial = new THREE.MeshBasicMaterial( { color: "#9E4300", skinning: true} );
+       Standard = new THREE.MeshStandardMaterial( { color: "#9E4300", skinning: true} );
 
+       const loadTexture = new THREE.TextureLoader();
+       const RainbowTexture = loadTexture.load("textures/SupernumeraryRainbows_Entwistle_1362.jpg");
 
-  newStandard = new THREE.MeshStandardMaterial({
-    map: imgTexture,
-    bumpMap: imgTexture,
-    bumpScale: 1,
-    //color: diffuseColor,
-    metalness: 0.5,
-    roughness: 0.1,
-    //envMap: imgTexture,
-    displacementmap: imgTexture,
-    displacementscale: 0.1,
-    skinning: true
-  });
+       // set the "color space" of the texture
+       RainbowTexture.encoding = THREE.sRGBEncoding;
+
+         // reduce blurring at glancing angles
+       RainbowTexture.anisotropy = 16;
+       RainbowTexture.wrapS = RainbowTexture.wrapT = THREE.RepeatWrapping;
+
+       const imgTexture = new THREE.TextureLoader().load( "textures/water.JPG" );
+       				imgTexture.wrapS = imgTexture.wrapT = THREE.RepeatWrapping;
+       				imgTexture.anisotropy = 16;
 
 
+     SkyboxMaterial = new THREE.MeshBasicMaterial( {
+                    color: 0xffffff,
+                    envMap: scene.background,
+                    refractionRatio: 0.8 } );
+
+
+     newStandard = new THREE.MeshPhongMaterial( {
+  										map: RainbowTexture,
+  										//bumpMap: imgTexture,
+  										//bumpScale: 1,
+  										//color: diffuseColor,
+  										//metalness: 0.5,
+  										//roughness: 0.1,
+  										envMap: SkyboxTexture,
+                      //displacementMap: imgTexture,
+                      //displacementScale: 1,
+                      refractionRatio: 0.98,
+                      reflectivity: 0.9,
+                      specular: 0x222222,
+  					          //shininess: 100,
+                      skinning: true
+  									} );
+
+
+
+     refractorySkybox = new THREE.MeshPhongMaterial( {
+  										//map: imgTexture,
+  										//bumpMap: imgTexture,
+  										//bumpScale: 1,
+  										//color: diffuseColor,
+  										//metalness: 0.5,
+  										//roughness: 0.1,
+  										envMap: SkyboxTexture,
+                      //displacementMap: imgTexture,
+                      //displacementScale: 1,
+                      refractionRatio: 0.98,
+                      reflectivity: 0.9,
+                      //specular: 0x222222,
+  					          //shininess: 100,
+                      skinning: true
+  									} );
+
+      pointsMaterial = new THREE.PointsMaterial( {
+        color: diffuseColor,
+        sizeAttenuation: true,
+        size: 0.1
+      } );
+
+
+
+  }
 
 }
 
@@ -182,9 +246,27 @@ function update() {
 
 }
 
+function doStuffwithRaycaster() {
+
+    // update the picking ray with the camera and mouse position
+  	raycaster.setFromCamera( mouse, camera );
+
+  	// calculate objects intersecting the picking ray
+  	var intersects = raycaster.intersectObjects( scene.children );
+
+  	for ( var i = 0; i < intersects.length; i++ ) {
+
+      //change the object that was intersected with
+  		intersects[ i ].object.material.color.set( 0xff0000 );
+
+  	}
+
+}
+
 function render() {
 
   //console.log(camera.position);
+  //doStuffwithRaycaster();
 
   renderer.render(scene, camera);
 
