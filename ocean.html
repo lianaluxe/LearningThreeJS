@@ -1,43 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
+	<head>
+		<title>three.js - water</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="styles/main.css">
+	</head>
+	<body>
 
-<head>
-	<title>Drowning</title>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-	<link type="text/css" rel="stylesheet" href="styles/ocean.css">
+		<div id="container"></div>
+		<div id="info">
+			<a href="https://threejs.org" target="_blank" rel="noopener noreferrer">three.js</a> - water
+		</div>
 
-	<script src="https://cdn.jsdelivr.net/npm/@widgetbot/crate@3" async defer>
-		new Crate({
-			server: '784273291308564501', // Mindspace
-			channel: '786416473509593100' // #liana-rohlfing-mckenzie
-		})
-	</script>
-</head>
+		<script type="module">
 
-<body>
+			import * as THREE from './js/three.js-master/build/three.module.js';
 
-	<div id="container"></div>
-	<!-- <div id="info">
-			virtual anxiety
-		</div> -->
-
-	<script type="module">
-
-		import * as THREE from './js/three.js-master/build/three.module.js';
-
-			import { GUI } from './js/three.js-master/examples/jsm/libs/dat.gui.module.js';
-			import { GLTFLoader } from './js/three.js-master/examples/jsm/loaders/GLTFLoader.js';
 			import { OrbitControls } from './js/three.js-master/examples/jsm/controls/OrbitControls.js';
-			import { Water } from './js/three.js-master/examples/jsm/objects/Water.js';
-			import { Sky } from './js/three.js-master/examples/jsm/objects/Sky.js';
+			import { GLTFLoader } from './js/three.js-master/examples/jsm/loaders/GLTFLoader.js';
+			import { Water } from './js/three.js-master/examples/jsm/objects/Water2.js';
 
-			var container;
-			var camera, scene, renderer;
-			var controls, water, sun, mesh;
-			const mixers = [];
-			const clock = new THREE.Clock();
+			var scene, camera, clock, renderer, water;
+
+			var torusKnot;
 			let model;
+			const mixers = [];
+
+			var params = {
+				color: '#ffffff',
+				scale: 4,
+				flowX: 1,
+				flowY: 1
+			};
 
 			init();
 			loadModels();
@@ -53,129 +48,107 @@
 
 			function init() {
 
-				container = document.getElementById( 'container' );
-
-				//
-
-				renderer = new THREE.WebGLRenderer();
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				container.appendChild( renderer.domElement );
-
-				//
+				// scene
 
 				scene = new THREE.Scene();
 
-				camera = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 1, 20000 );
-				camera.position.set( 16.5, 11.2, 57.7 );
+				// camera
 
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 200 );
+				camera.position.set( -3.58, 0.9, 3.37 );
+				// camera.lookAt( scene.position );
 
+				// clock
+
+				clock = new THREE.Clock();
+
+				// mesh
+
+				// var torusKnotGeometry = new THREE.TorusKnotBufferGeometry( 3, 1, 256, 32 );
+				// var torusKnotMaterial = new THREE.MeshNormalMaterial();
 				//
+				// torusKnot = new THREE.Mesh( torusKnotGeometry, torusKnotMaterial );
+				// torusKnot.position.y = 4;
+				// torusKnot.scale.set( 0.5, 0.5, 0.5 );
+				// scene.add( torusKnot );
 
-				sun = new THREE.Vector3();
+				// ground
 
-				// Water
+				var groundGeometry = new THREE.PlaneBufferGeometry( 20, 20 );
+				var groundMaterial = new THREE.MeshStandardMaterial( { roughness: 0.8, metalness: 0.4 } );
+				var ground = new THREE.Mesh( groundGeometry, groundMaterial );
+				ground.rotation.x = Math.PI * - 0.5;
+				scene.add( ground );
 
-				var waterGeometry = new THREE.PlaneBufferGeometry( 10000, 10000 );
+				var textureLoader = new THREE.TextureLoader();
+				textureLoader.load( 'textures/zoomtile.png', function ( map ) {
 
-				water = new Water(
-					waterGeometry,
-					{
-						textureWidth: 512,
-						textureHeight: 512,
-						waterNormals: new THREE.TextureLoader().load( 'img/Zoom.png', function ( texture ) {
+					map.wrapS = THREE.RepeatWrapping;
+					map.wrapT = THREE.RepeatWrapping;
+					map.anisotropy = 16;
+					map.repeat.set( 4, 4 );
+					groundMaterial.map = map;
+					groundMaterial.needsUpdate = true;
 
-							texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+				} );
 
-						} ),
-						alpha: 1.0,
-						sunDirection: new THREE.Vector3(),
-						sunColor: 0x6a0dad,
-						waterColor: 0x000000,
-						distortionScale: 3.7,
-						fog: scene.fog !== undefined
-					}
-				);
+				// water
 
-				water.rotation.x = - Math.PI / 2;
-				var zoom = new THREE.TextureLoader().load( "img/Zoom.png" );
-				zoom.wrapS = THREE.RepeatWrapping;
-				zoom.wrapT = THREE.RepeatWrapping;
+				var waterGeometry = new THREE.PlaneBufferGeometry( 20, 20 );
 
+				water = new Water( waterGeometry, {
+					color: params.color,
+					scale: params.scale,
+					flowDirection: new THREE.Vector2( params.flowX, params.flowY ),
+					textureWidth: 1024,
+					textureHeight: 1024
+				} );
+
+				water.position.y = .01;
+				water.rotation.x = Math.PI * - 0.5;
 				scene.add( water );
 
-				// Skybox
+				// skybox
 
-				var sky = new Sky();
-				sky.scale.setScalar( 10000 );
-				scene.add( sky );
+				var cubeTextureLoader = new THREE.CubeTextureLoader();
+				cubeTextureLoader.setPath( 'textures/zoom/' );
 
-				var uniforms = sky.material.uniforms;
+				var cubeTexture = cubeTextureLoader.load( [
+					"posx.png", "negx.png",
+					"posy.png", "negy.png",
+					"posz.png", "negz.png"
+				] );
 
-				uniforms[ 'turbidity' ].value = 2;
-				uniforms[ 'rayleigh' ].value = 4;
-				uniforms[ 'mieCoefficient' ].value = 0.005;
-				uniforms[ 'mieDirectionalG' ].value = 0.8;
+				scene.background = cubeTexture;
 
-				var parameters = {
-					inclination: 0.49,
-					azimuth: 0.205
-				};
+				// light
 
-				var pmremGenerator = new THREE.PMREMGenerator( renderer );
+				var ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
+				scene.add( ambientLight );
 
-				function updateSun() {
+				var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.6 );
+				directionalLight.position.set( - 1, 1, 1 );
+				scene.add( directionalLight );
 
-					var theta = Math.PI * ( parameters.inclination - 0.5 );
-					var phi = 2 * Math.PI * ( parameters.azimuth - 0.5 );
+				// renderer
 
-					sun.x = Math.cos( phi );
-					sun.y = Math.sin( phi ) * Math.sin( theta );
-					sun.z = Math.sin( phi ) * Math.cos( theta );
-
-					sky.material.uniforms[ 'sunPosition' ].value.copy( sun );
-					water.material.uniforms[ 'sunDirection' ].value.copy( sun ).normalize();
-
-					scene.environment = pmremGenerator.fromScene( sky ).texture;
-
-				}
-
-				updateSun();
-
-				//
-
-				//var geometry = new THREE.BoxBufferGeometry( 30, 30, 30 );
-				//var material = new THREE.MeshStandardMaterial( { roughness: 0 } );
-
-				//mesh = new THREE.Mesh( geometry, material );
-				//scene.add( mesh );
-
-				//
-
-				controls = new OrbitControls( camera, renderer.domElement );
-				controls.maxPolarAngle = Math.PI * 0.495;
-				controls.target.set( 0, 10, 0 );
-				controls.minDistance = 40.0;
-				controls.maxDistance = 200.0;
-				controls.update();
-
-				//
-
-
-				window.addEventListener( 'resize', onWindowResize, false );
-
-			}
-
-			function onWindowResize() {
-
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
-
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				document.body.appendChild( renderer.domElement );
+
+
+				//
+
+				var controls = new OrbitControls( camera, renderer.domElement );
+				controls.minDistance = 5;
+				controls.maxDistance = 10;
+
+				//
+
+				window.addEventListener( 'resize', onResize, false );
 
 			}
-
-
 
 			function loadModels() {
 
@@ -187,7 +160,8 @@
 
 			    model = gltf.scene.children[0];
 			    model.position.copy(position);
-					model.rotation.z = .35;
+					model.scale.set(.1, .1, .1);
+					model.rotation.z = -.75;
 
 			    const animation = gltf.animations[0];
 
@@ -211,7 +185,7 @@
 
 			  // load the first model. Each model is loaded asynchronously,
 			  // so don't make any assumption about which one will finish loading first
-			  const parrotPosition = new THREE.Vector3(5, -21, 20);
+			  const parrotPosition = new THREE.Vector3(-1.5, -2.08, 1.5);
 			  loader.load('models/uxr_citizen_floating_2/scene.gltf', gltf => onLoad(gltf, parrotPosition), onProgress, onError);
 
 			  // const flamingoPosition = new THREE.Vector3(7.5, 0, -10);
@@ -222,9 +196,18 @@
 
 			}
 
+			function onResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
 			function animate() {
 
 				requestAnimationFrame( animate );
+
 				render();
 
 			}
@@ -243,22 +226,18 @@
 
 			function render() {
 
-				var time = performance.now() * 0.001;
+				// console.log(camera.position);
+				// var delta = clock.getDelta();
+				// var time = performance.now() * 0.001;
 
-				//console.log(camera.position);
-
-				//camera.rotation.x = 180 * THREE.Math.DEG2RAD;
-				//model.position.y = Math.sin( time ) * 20 + 5;
-				//mesh.rotation.x = time * 0.5;
-				//mesh.rotation.z = time * 0.51;
-
-				water.material.uniforms[ 'time' ].value += 1.0 / 60.0;
+				// torusKnot.rotation.x += delta;
+				// torusKnot.rotation.y += delta * 0.5;
 
 				renderer.render( scene, camera );
 
 			}
 
 		</script>
-</body>
 
+</body>
 </html>
